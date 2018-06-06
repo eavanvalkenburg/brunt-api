@@ -60,6 +60,7 @@ class BruntAPI:
         self._s = Session()
 
     def login(self, username, password):
+        """ Login method """
         data = {
             "data": {
                 "ID": username,
@@ -73,6 +74,7 @@ class BruntAPI:
         return True
 
     def getThings(self):
+        """ Get the things registered in your account """
         data = {
             "path": "/thing",
             "host": "https://sky.brunt.co",
@@ -83,6 +85,7 @@ class BruntAPI:
         return self._things
 
     def getState(self, thing):
+        """ Get the state of a thing by name """
         for t in self._things :
             if 'NAME' in t:
                 if  t['NAME'] == thing and 'thingUri' in t:
@@ -102,6 +105,7 @@ class BruntAPI:
         return resp
 
     def changePosition(self, thing, position):
+        """ Change the position of a thing by name """
         for t in self._things :
             if 'NAME' in t:
                 if t['NAME'] == thing and 'thingUri' in t:
