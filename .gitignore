@@ -105,3 +105,4 @@ venv.bak/
 creds.json
 test.py
 .pypirc
+*.bat
