@@ -1,5 +1,5 @@
 
-from requests import Request, Session
+import requests
 from enum import Enum
 import json
 
@@ -19,8 +19,13 @@ class BruntHttp:
 
     def __init__(self):
         """ """
+        self._sessionid = ''
 
-    def request(self, session, data, request_type: RequestTypes):
+    def _is_logged_in(self):
+        """ Check whether or not the user is logged in. """
+        return True if self._sessionid else False
+
+    def request(self, data, request_type: RequestTypes):
         """ internal request method 
         
         :param session: session object from the Requests package
@@ -31,34 +36,38 @@ class BruntHttp:
         """
         #prepare the URL to send the request to
         url = f"{ data['host'] }{ data['path'] }"
+
         #fixed header content
         headers = self._DEFAULT_HEADER
+        if self._sessionid:
+            headers['Cookie'] = f"skySSEIONID={ self._sessionid }"
 
         #prepare the payload and add the length to the header, payload might be empty.
         if "data" in data:
             payload = json.dumps(data['data'])
             headers["Content-Length"] = str(len(data['data']))
         else: payload = ""
-        #prepare the request and add it to the session
-        req = Request(request_type.value, url,  data=payload, headers=headers)
-        prepped = session.prepare_request(req)
-        #send the request
-        resp = session.send(prepped)#, timeout=20)
+        
+        #send the request and capture the response
+        resp = requests.request(request_type.value, url, data=payload, headers=headers)
         # raise an error if it occured in the Request.
         resp.raise_for_status()
         # no error, so set result to success
         ret = {'result': 'success'}
         # check if there is something in the response body
-        if len(resp.json()) > 0: 
+        if len(resp.text) > 0:
+            respjson = resp.json()
             # if it is a list of things, then set the tag to things
-            if type(resp.json()) is list:
-                ret['things'] = resp.json()
-            # otherwise to a single thing.
-            else:                
-                ret['thing'] = resp.json()
-        # if the response had a cookie with that key, add that to the session object
-        if 'skySSEIONID' in resp.cookies:
-            session.cookies = resp.cookies     
+            if type(respjson) is list:
+                ret['things'] = respjson
+            # otherwise to a single thing. If ID is part of it it is a login response, otherwise a Thing
+            elif "ID" in respjson:
+                ret['login'] = respjson
+                # if it was a login a new cookie was send back, capture the sessionid from it
+                self._sessionid = resp.cookies['skySSEIONID']
+                ret['cookie'] = resp.cookies
+            else:            
+                ret['thing'] = respjson
         return ret
 
 class BruntAPI:
@@ -66,7 +75,6 @@ class BruntAPI:
         """ """
         self._http = BruntHttp()
         self._things = {}
-        self._s = Session()
 
     def login(self, username, password):
         """ Login method using username and password
@@ -84,11 +92,11 @@ class BruntAPI:
             "path": "/session",
             "host": "https://sky.brunt.co"
         }
-        return self._http.request(self._s, data, RequestTypes.POST)
+        return self._http.request(data, RequestTypes.POST)
 
     def _is_logged_in(self):
-        """ Check whether or not the user is logged in. """        
-        return True if self._s.cookies else False 
+        """ Check whether or not the user is logged in. """
+        return self._http._is_logged_in()
 
     def getThings(self):
         """ Get the things registered in your account 
@@ -101,7 +109,7 @@ class BruntAPI:
             "path": "/thing",
             "host": "https://sky.brunt.co"
         }
-        resp = self._http.request(self._s, data, RequestTypes.GET)
+        resp = self._http.request(data, RequestTypes.GET)
         self._things = resp['things']
         return resp
 
@@ -144,7 +152,7 @@ class BruntAPI:
             "path": "/thing" + thingUri,
             "host": "https://thing.brunt.co:8080" 
         }
-        return self._http.request(self._s, data, RequestTypes.GET)
+        return self._http.request(data, RequestTypes.GET)
 
     def changePosition(self, position, **kwargs):
         """Change the position of the thing.
@@ -188,5 +196,5 @@ class BruntAPI:
             "host": "https://thing.brunt.co:8080"
         }
         #call the request method and return the response.
-        return self._http.request(self._s, data, RequestTypes.PUT)
+        return self._http.request(data, RequestTypes.PUT)
 
