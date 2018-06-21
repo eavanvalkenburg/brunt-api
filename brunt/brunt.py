@@ -1,5 +1,6 @@
 
 import requests
+from datetime import datetime, timedelta
 from enum import Enum
 import json
 
@@ -21,7 +22,7 @@ class BruntHttp:
         """ """
         self._sessionid = ''
 
-    def _is_logged_in(self):
+    def _has_session(self):
         """ Check whether or not the user is logged in. """
         return True if self._sessionid else False
 
@@ -71,10 +72,24 @@ class BruntHttp:
         return ret
 
 class BruntAPI:
-    def __init__(self):
-        """ """
+    def __init__(self, **kwargs):
+        """ Constructor for the API wrapper.
+        
+        If you supply username and password here, they are stored, but not used.
+        Auto logging in then does work when calling another method, no explicit login needed.
+
+        :param username: the username of your Brunt account
+        :param password: the password of your Brunt account
+        """
+        self._user = None
+        self._pass = None
+        if 'username' in kwargs:
+            self._user = kwargs['username']
+        if 'password' in kwargs:
+            self._pass = kwargs['password']
         self._http = BruntHttp()
         self._things = {}
+        self._lastlogin = None
 
     def login(self, username, password):
         """ Login method using username and password
@@ -84,33 +99,47 @@ class BruntAPI:
         :return: True if successfull
         :raises: errors from Requests call
         """
+        self._user = username
+        self._pass = password
+        return self._login()
+    
+    def _login(self):
+        if not self._user or not self._pass:
+            raise NameError("Please login first using the login function, with username and password")
         data = {
             "data": {
-                "ID": username,
-                "PASS": password,
+                "ID": self._user,
+                "PASS": self._pass,
             },
             "path": "/session",
             "host": "https://sky.brunt.co"
         }
-        return self._http.request(data, RequestTypes.POST)
+        resp = self._http.request(data, RequestTypes.POST)
+        self._lastlogin = datetime.utcnow()
+        return resp
 
     def _is_logged_in(self):
         """ Check whether or not the user is logged in. """
-        return self._http._is_logged_in()
+        # if the user has not logged in in 24 hours, relogin
+        if not self._http._has_session() or datetime.utcnow() >= self._lastlogin + timedelta(hours=24):
+            return self._login()
+        else:
+            return {}
 
     def getThings(self):
         """ Get the things registered in your account 
         
         :return: dict with things registered in the logged in account and API call status
         """
-        if not self._is_logged_in():
-            raise NameError("Please login first using the login function, with username and password")
+        login_return = self._is_logged_in()
+            # raise NameError("Please login first using the login function, with username and password")
         data = {
             "path": "/thing",
             "host": "https://sky.brunt.co"
         }
         resp = self._http.request(data, RequestTypes.GET)
         self._things = resp['things']
+        resp.update(login_return)
         return resp
 
     def _getThings(self):
@@ -131,8 +160,7 @@ class BruntAPI:
         :raises: ValueError if the requested thing does not exists. NameError if not logged in. SyntaxError when 
             not exactly one of the params is given.
         """
-        if not self._is_logged_in():
-            raise NameError("Please login first using the login function, with username and password")
+        login_return = self._is_logged_in()
         if "thingUri" in kwargs:
             thingUri = kwargs['thingUri']
         elif "thing" in kwargs:
@@ -152,20 +180,22 @@ class BruntAPI:
             "path": "/thing" + thingUri,
             "host": "https://thing.brunt.co:8080" 
         }
-        return self._http.request(data, RequestTypes.GET)
+        resp = self._http.request(data, RequestTypes.GET)
+        resp.update(login_return)
+        return resp
 
-    def changePosition(self, position, **kwargs):
-        """Change the position of the thing.
+    def changeKey(self, **kwargs):
+        """Change a variable of the thing.  Mostly included for future additions.
 
-        :param position: The new position for the slide (0-100)
+        :param key: The value you want to change
+        :param value: The new value
         :param thing: a string with the name of the thing, which is then checked using getThings.
         :param thingUri: Uri (string) of the thing you are getting the state from, not checked against getThings.
         :return: a dict with the state of the Thing.
         :raises: ValueError if the requested thing does not exists or the position is not between 0 and 100. 
             NameError if not logged in. SyntaxError when not exactly one of the params is given. 
         """
-        if not self._is_logged_in():
-            raise NameError("Please login first using the login function, with username and password")
+        login_return = self._is_logged_in()
         #check the thing being changed
         if "thingUri" in kwargs:
             thingUri = kwargs['thingUri']
@@ -183,18 +213,44 @@ class BruntAPI:
         else:
             return SyntaxError("Please provide either the 'thing' name or the 'thingUri' not both and at least one")
 
-        # check validity of the position
-        if position < 0 or position > 100:
-            return ValueError("Please set the position between 0 and 100.")
+        if 'key' in kwargs:
+            key = kwargs['key']
+        else:
+            raise SyntaxError("Please provide a key to change")
+
+        if 'value' in kwargs:
+            value = kwargs['value']
+        else:
+            raise SyntaxError("Please provide a value to change to")
+
+        if key.lower().find('position'):
+            if int(value) < 0 or int(value) > 100:
+                return ValueError("Please set the position between 0 and 100.")
 
         #prepare data payload
         data = {
             "data": {
-                "requestPosition": str(position)
+                str(key): str(value)
             },
             "path": "/thing" + thingUri,
             "host": "https://thing.brunt.co:8080"
         }
+        
         #call the request method and return the response.
-        return self._http.request(data, RequestTypes.PUT)
+        resp = self._http.request(data, RequestTypes.PUT)
+        resp.update(login_return)
+        return resp
 
+    def changeRequestPosition(self, request_position, **kwargs):
+        """Change the position of the thing.
+
+        :param request_position: The new position for the slide (0-100)
+        :param thing: a string with the name of the thing, which is then checked using getThings.
+        :param thingUri: Uri (string) of the thing you are getting the state from, not checked against getThings.
+        :return: a dict with the state of the Thing.
+        :raises: ValueError if the requested thing does not exists or the position is not between 0 and 100. 
+            NameError if not logged in. SyntaxError when not exactly one of the params is given. 
+        """
+        kwargs['key']="requestPosition"
+        kwargs['value']=request_position
+        return self.changeKey(**kwargs)

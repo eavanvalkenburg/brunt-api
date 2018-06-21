@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="brunt",
-    version="0.1.1",
+    version="0.1.2",
     author="Eduard van Valkenburg",
     author_email="eduardvanvalkenburg@outlook.com",
     description="Unofficial API for Brunt",

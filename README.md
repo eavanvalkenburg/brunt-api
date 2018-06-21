@@ -28,7 +28,7 @@ if int(state['currentPosition']) == 100:
     newPos = 90
 print(f"    Setting { state['NAME'] } to position { newPos }")
 
-res = bapi.changePosition(thing='Blind', newPos)
+res = bapi.changeRequestPosition(newPos, thing='Blind')
 print('    Success!' if res else '    Fail!')
     
 ```
@@ -37,6 +37,14 @@ print('    Success!' if res else '    Fail!')
 ```python
 BruntAPI()
 ```
+Constructor for the API wrapper.
+
+If you supply username and password here, they are stored, but not used.
+Auto logging in then does work when calling another method, no explicit login needed.
+
+:param username: the username of your Brunt account
+:param password: the password of your Brunt account
+
 
 <h2 id="brunt.brunt.BruntAPI.login">login</h2>
 
@@ -75,14 +83,15 @@ Get the state of a thing
 :raises: ValueError if the requested thing does not exists. NameError if not logged in. SyntaxError when
     not exactly one of the params is given.
 
-<h2 id="brunt.brunt.BruntAPI.changePosition">changePosition</h2>
+<h2 id="brunt.brunt.BruntAPI.changeRequestPosition">changeRequestPosition</h2>
 
 ```python
-BruntAPI.changePosition(self, position, **kwargs)
+BruntAPI.changeRequestPosition(self, request_position, **kwargs)
 ```
-Changes the position of the thing.
+Changes the position of the thing. Internally calls the changeKey method with key set to
+requestPosition and value set to request_position
 
-:param position: The new position for the slide (0-100)
+:param request_position: The new position for the slide (0-100)
 :param thing: a string with the name of the thing, which is then checked using getThings.
 :param thingUri: Uri (string) of the thing you are getting the state from, not checked against getThings.
 
@@ -90,3 +99,17 @@ Changes the position of the thing.
 :raises: ValueError if the requested thing does not exists or the position is not between 0 and 100.
     NameError if not logged in. SyntaxError when not exactly one of the params is given.
 
+<h2 id="brunt.brunt.BruntAPI.changeKey">changeKey</h2>
+
+```python
+BruntAPI.changeKey(self, **kwargs)
+```
+Change a variable of the thing by supplying the key and value. Mostly included for future additions.
+
+:param key: The key of the value you want to change
+:param value: The new value
+:param thing: a string with the name of the thing, which is then checked using getThings.
+:param thingUri: Uri (string) of the thing you are getting the state from, not checked against getThings.
+:return: a dict with the state of the Thing.
+:raises: ValueError if the requested thing does not exists or the position is not between 0 and 100. 
+    NameError if not logged in. SyntaxError when not exactly one of the params is given. 
