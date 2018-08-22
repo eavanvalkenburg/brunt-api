@@ -36,12 +36,12 @@ class BruntHttp:
         :raises: raises errors from Requests through the raise_for_status function
         """
         #prepare the URL to send the request to
-        url = f"{ data['host'] }{ data['path'] }"
+        url = data['host'] + data['path']
 
         #fixed header content
         headers = self._DEFAULT_HEADER
         if self._sessionid:
-            headers['Cookie'] = f"skySSEIONID={ self._sessionid }"
+            headers['Cookie'] = "skySSEIONID=" + self._sessionid
 
         #prepare the payload and add the length to the header, payload might be empty.
         if "data" in data:
@@ -171,7 +171,7 @@ class BruntAPI:
                         thingUri = t['thingUri']
                         break
                     else:
-                        raise ValueError(f'Unknown thing: { thing }.')
+                        raise ValueError('Unknown thing: ' + thing)
                 else:
                     raise ValueError('No things available.')
         else:
@@ -207,7 +207,7 @@ class BruntAPI:
                         thingUri = t['thingUri']
                         break
                     else:
-                        raise ValueError(f'Unknown thing: { thing }.')
+                        raise ValueError('Unknown thing: ' + thing)
                 else:
                     raise ValueError('No things available.')
         else:
