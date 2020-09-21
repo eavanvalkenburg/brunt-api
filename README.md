@@ -1,5 +1,5 @@
 # Brunt
-Unofficial python SDK for Brunt, based on the npm version here https://github.com/MattJeanes/brunt-api
+Unofficial python SDK for Brunt, based on the NPM version here https://github.com/MattJeanes/brunt-api
 
 This package allows you to control your Brunt devices from code.
 
@@ -56,7 +56,7 @@ Login method using username and password
 :param username: the username of your Brunt account
 :param password: the password of your Brunt account
 
-:return: True if successfull
+:return: True if successful
 :raises: errors from Requests call
 
 <h2 id="brunt.brunt.BruntAPI.getThings">getThings</h2>

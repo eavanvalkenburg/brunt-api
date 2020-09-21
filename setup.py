@@ -1,23 +1,25 @@
-from setuptools import setup, find_packages
+# -*- coding: utf-8 -*-
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+"""
+Setup file for brunt.
 
-setup(
-    name="brunt",
-    version="0.1.3",
-    author="Eduard van Valkenburg",
-    author_email="eduardvanvalkenburg@outlook.com",
-    description="Unofficial API for Brunt",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    url="https://github.com/eavanvalkenburg/brunt-api",
-    classifiers=(
-        'Development Status :: 3 - Alpha',
-        "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
-    ),
-    packages=find_packages(),
-    install_requires=['requests>=2.18.1'], 
-)
+Use setup.cfg to configure your project.
+
+This file was generated with PyScaffold 3.2.3.
+PyScaffold helps you to put up the scaffold of your new Python project.
+Learn more under: https://pyscaffold.org/
+"""
+import sys
+
+from pkg_resources import VersionConflict, require
+from setuptools import setup
+
+try:
+    require("setuptools>=38.3")
+except VersionConflict:
+    print("Error: version of setuptools is too old (<38.3)!")
+    sys.exit(1)
+
+
+if __name__ == "__main__":
+    setup(use_pyscaffold=True)
