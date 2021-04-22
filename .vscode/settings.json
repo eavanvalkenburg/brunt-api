@@ -1,6 +1,18 @@
 {
-    "python.pythonPath": "C:\\Anaconda3\\python.exe",
     "files.associations": {
         "*.yaml": "home-assistant"
-    }
+    },
+    "python.testing.pytestArgs": [],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.pythonPath": "/Users/edvan/miniforge3/bin/python",
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true,
+    "python.linting.pydocstyleEnabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.pycodestyleEnabled": false,
+    "editor.formatOnSave": true,
+    "python.formatting.provider": "black",
+    "python.terminal.activateEnvInCurrentTerminal": true,
 }
