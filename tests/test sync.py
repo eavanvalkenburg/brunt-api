@@ -1,12 +1,9 @@
 """Test script."""
 import asyncio
 import logging
-from aiohttp import ClientSession
 import json
-from datetime import datetime
-import time
 
-from brunt import BruntClientAsync
+from brunt import BruntClient
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -16,18 +13,18 @@ _LOGGER = logging.getLogger(__name__)
 async def main():
     """Run Main Test method."""
     creds = json.loads(open("tests//creds.json").read())
-    bapi = BruntClientAsync(username=creds["username"], password=creds["password"])
-    print("Calling Brunt")
+    bapi = BruntClient(username=creds["username"], password=creds["password"])
+    print("Calling Brunt (sync)")
     try:
-        await bapi.async_login()
-        things = await bapi.async_get_things()
+        bapi.login()
+        things = bapi.get_things()
         print(things)
-        print("")
+        # print("")
         move = False
-        state = await bapi.async_get_state(thingUri=creds["device"])
+        state = bapi.get_state(thingUri=creds["device"])
         state = state["thing"]
         # things = state['thing']
-        print(state)
+        # print(state)
         print(
             f"    Current status of { state['NAME'] } is position { state['currentPosition'] }"
         )
@@ -36,15 +33,13 @@ async def main():
             if int(state["currentPosition"]) == 89:
                 newPos = 100
             print(f"    Setting { state['NAME'] } to position { newPos }")
-            res = await bapi.async_change_request_position(
-                newPos, thingUri=creds["device"]
-            )
+            res = bapi.change_request_position(newPos, thingUri=creds["device"])
             print(res)
             print("    Success!" if res else "    Fail!")
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        await bapi.async_close()
+        bapi.close()
 
 
 if __name__ == "__main__":

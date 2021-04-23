@@ -1,14 +1,16 @@
 """Main code for brunt http."""
 import json
 import logging
-from abc import ABC, abstractmethod
-from typing import Any, Dict, Union, overload
-
+from datetime import datetime
+from abc import ABC, abstractmethod, abstractproperty
+from typing import Any, Dict, Union
 import requests
-from aiohttp import ClientResponse, ClientSession
 from requests.models import Response
+from aiohttp import ClientResponse, ClientSession
+from multidict import CIMultiDict
 
 from .utils import RequestTypes
+from .const import DT_FORMAT_STRING, COOKIE_DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -26,28 +28,21 @@ class BaseBruntHTTP(ABC):
 
     def __init__(self):
         """Initialize the BaseBruntHTTP object."""
-        self._sessionid = ""
-
-    @property
-    def _has_sessionid(self) -> bool:
-        """Check whether or not the user is logged in."""
-        return True if self._sessionid else False
+        self._session = None
 
     def _prepare_request(self, data: dict) -> dict:
         """Prepare the payload and add the length to the header, payload might be empty."""
-        headers = DEFAULT_HEADER.copy()
-        if self._sessionid:
-            headers["Cookie"] = "skySSEIONID=" + self._sessionid
-
+        # headers = DEFAULT_HEADER.copy()
+        payload = ""
+        headers = ""
         if "data" in data:
             payload = json.dumps(data["data"])
-            headers["Content-Length"] = str(len(data["data"]))
-        else:
-            payload = ""
+            headers = {"Content-Length": str(len(payload))}
 
         _LOGGER.debug("url: %s", data["host"] + data["path"])
         _LOGGER.debug("data: %s", payload)
-        _LOGGER.debug("headers: %s", headers)
+        _LOGGER.debug("headers: %s", self._session.headers)
+        _LOGGER.debug("request headers: %s", headers)
         return {"url": data["host"] + data["path"], "data": payload, "headers": headers}
 
     def _parse_response(
@@ -57,6 +52,7 @@ class BaseBruntHTTP(ABC):
     ) -> dict:
         """Parse the json of the response."""
         ret: Dict[str, Any] = {"result": "success"}
+        _LOGGER.debug("Response json: %s", response_json)
         # if it is a list of things, then set the tag to things
         if isinstance(response_json, list):
             ret["things"] = response_json
@@ -64,9 +60,6 @@ class BaseBruntHTTP(ABC):
 
         if "ID" in response_json:
             ret["login"] = response_json
-            # if it was a login a new cookie was send back, capture the sessionid from it
-            self._sessionid = response.cookies["skySSEIONID"]
-            ret["cookie"] = response.cookies
             return ret
 
         ret["thing"] = response_json
@@ -74,15 +67,42 @@ class BaseBruntHTTP(ABC):
 
     @abstractmethod
     def request(self, data: dict, request_type: RequestTypes) -> dict:
+        """Return the request response - abstract."""
         pass
 
     @abstractmethod
     async def async_request(self, data: dict, request_type: RequestTypes) -> dict:
+        """Return the request response - abstract."""
+        pass
+
+    @abstractproperty
+    def is_logged_in(self) -> bool:
+        """Return True if there is a session and the cookie is still valid."""
         pass
 
 
 class BruntHttp(BaseBruntHTTP):
     """Class for brunt http calls."""
+
+    def __init__(self, session: requests.Session = None):
+        """Initialize the BruntHTTP object."""
+        super().__init__()
+        self._session = session if session else requests.Session()
+        self._session.headers = DEFAULT_HEADER
+
+    @property
+    def is_logged_in(self) -> bool:
+        """Return True if there is a session and the cookie is still valid."""
+        if not self._session.cookies:
+            return False
+
+        for cookie in self._session.cookies:
+            if cookie.domain == COOKIE_DOMAIN:
+                return (
+                    datetime.strptime(cookie.expires, DT_FORMAT_STRING)
+                    > datetime.utcnow()
+                )
+        return False
 
     async def async_request(self, data: dict, request_type: RequestTypes) -> dict:
         """Raise error for using this call with sync."""
@@ -97,7 +117,7 @@ class BruntHttp(BaseBruntHTTP):
         :returns: dict with sessionid for a login and the dict of the things for the other calls, or just success for PUT
         :raises: raises errors from Requests through the raise_for_status function
         """
-        resp = requests.request(request_type.value, **self._prepare_request(data))
+        resp = self._session.request(request_type.value, **self._prepare_request(data))
         # raise an error if it occured in the Request.
         resp.raise_for_status()
         # check if there is something in the response body
@@ -113,6 +133,20 @@ class BruntHttpAsync(BaseBruntHTTP):
         """Initialize the BruntHTTP object."""
         super().__init__()
         self._session = session if session else ClientSession()
+        self._session._default_headers = CIMultiDict(DEFAULT_HEADER)
+
+    @property
+    def is_logged_in(self) -> bool:
+        """Return True if there is a session and the cookie is still valid."""
+        if not self._session.cookie_jar:
+            return False
+        for cookie in self._session.cookie_jar:
+            if cookie.get("domain") == COOKIE_DOMAIN:
+                return (
+                    datetime.strptime(cookie.get("expires"), DT_FORMAT_STRING)
+                    > datetime.utcnow()
+                )
+        return False
 
     def request(self, data: dict, request_type: RequestTypes) -> dict:
         """Raise error for using this call with async."""

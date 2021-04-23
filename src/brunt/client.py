@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 from abc import ABC
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 from types import TracebackType
-from typing import List, Optional, Type
+from typing import List, Optional, Type, Any
+from aiohttp.client import ClientSession
+from requests import Session
 
 from .const import MAIN_HOST, MAIN_THINGS_PATH, REQUEST_POSITION_KEY, THINGS_HOST
 from .http import BruntHttp, BruntHttpAsync
@@ -18,7 +20,7 @@ _LOGGER.setLevel(logging.DEBUG)
 class BaseClient(ABC):
     """Base class for clients."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, username: str = None, password: str = None):
         """Construct for the API wrapper.
 
         If you supply username and password here, they are stored, but not used.
@@ -27,8 +29,8 @@ class BaseClient(ABC):
         :param username: the username of your Brunt account
         :param password: the password of your Brunt account
         """
-        self._user: str = kwargs.get("username", "")
-        self._pass: str = kwargs.get("password", "")
+        self._user: str = username
+        self._pass: str = password
         self._things: List = []
         self._lastlogin: Optional[datetime] = None
 
@@ -95,18 +97,16 @@ class BaseClient(ABC):
             "Please provide either the 'thing' name or the 'thingUri', the thingUri is used first when given."
         )
 
-    @property
-    def _relogin(self) -> bool:
-        """Return whether a relogin is necessary."""
-        if not self._lastlogin:
-            return True
-        return datetime.utcnow() >= (self._lastlogin + timedelta(hours=24))
-
 
 class BruntClient(BaseClient):
     """Class for the Brunt API."""
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        username: str = None,
+        password: str = None,
+        session: Session = None,
+    ):
         """Construct for the API wrapper.
 
         If you supply username and password here, they are stored, but not used.
@@ -115,10 +115,27 @@ class BruntClient(BaseClient):
         :param username: the username of your Brunt account
         :param password: the password of your Brunt account
         """
-        super().__init__(**kwargs)
-        self._http = BruntHttp()
+        super().__init__(username, password)
+        self._http = BruntHttp(session=session)
 
-    def login(self, username: str = None, password: str = None) -> dict:
+    def __enter__(self) -> BruntClient:
+        """Enter the context manager."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        """Exit the context manager."""
+        self.close()
+
+    def close(self) -> None:
+        """Close the session."""
+        self._http._session.close()
+
+    def login(self, username: str = None, password: str = None) -> bool:
         """Login method using username and password.
 
         :param username: the username of your Brunt account
@@ -126,36 +143,28 @@ class BruntClient(BaseClient):
         :return: True if successfull
         :raises: errors from Requests call
         """
-        resp = self._http.request(
-            self._prepare_login(username, password), RequestTypes.POST
-        )
+        self._http.request(self._prepare_login(username, password), RequestTypes.POST)
         self._lastlogin = datetime.utcnow()
-        return resp
+        return True
 
-    def _is_logged_in(self) -> dict:
-        """Check whether or not the user is logged in."""
-        if self._relogin:
-            return self.login()
-        return {}
-
-    def get_things(self) -> dict:
+    def get_things(self, force: bool = False) -> list:
         """Get the things registered in your account.
 
         :return: dict with things registered in the logged in account and API call status
         """
-        login_return = self._is_logged_in()
-        resp = self._http.request(MAIN_THINGS_PATH, RequestTypes.GET)
-        self._things = resp["things"]
-        resp.update(login_return)
-        return resp
+        if not self._things or force:
+            return self._get_things()
+        return self._things
 
     def _get_things(self) -> list:
         """Check if there are things in memory, otherwise first do the getThings call and then return _things.
 
         :return: dict with things registered (without API call status)
         """
-        if not self._things:
-            self.get_things()
+        if not self._http.is_logged_in:
+            self.login()
+        resp = self._http.request(MAIN_THINGS_PATH, RequestTypes.GET)
+        self._things = resp["things"]
         return self._things
 
     def get_state(self, **kwargs) -> dict:
@@ -167,11 +176,10 @@ class BruntClient(BaseClient):
         :raises: ValueError if the requested thing does not exists. NameError if not logged in. SyntaxError when
             not exactly one of the params is given.
         """
-        self._get_things()
-        login_return = self._is_logged_in()
-        resp = self._http.request(self._prepare_state(**kwargs), RequestTypes.GET)
-        resp.update(login_return)
-        return resp
+        if not self._http.is_logged_in:
+            self.login()
+        self.get_things()
+        return self._http.request(self._prepare_state(**kwargs), RequestTypes.GET)
 
     def change_key(self, **kwargs) -> dict:
         """Change a variable of the thing.  Mostly included for future additions.
@@ -184,11 +192,10 @@ class BruntClient(BaseClient):
         :raises: ValueError if the requested thing does not exists or the position is not between 0 and 100.
             NameError if not logged in. SyntaxError when not exactly one of the params is given.
         """
-        self._get_things()
-        login_return = self._is_logged_in()
-        resp = self._http.request(self._prepare_change_key(**kwargs), RequestTypes.PUT)
-        resp.update(login_return)
-        return resp
+        if not self._http.is_logged_in:
+            self.login()
+        self.get_things()
+        return self._http.request(self._prepare_change_key(**kwargs), RequestTypes.PUT)
 
     def change_request_position(self, request_position, **kwargs) -> dict:
         """Change the position of the thing.
@@ -208,7 +215,12 @@ class BruntClient(BaseClient):
 class BruntClientAsync(BaseClient):
     """Class for the Brunt API."""
 
-    def __init__(self, **kwargs):
+    def __init__(
+        self,
+        username: str = None,
+        password: str = None,
+        session: ClientSession = None,
+    ):
         """Construct for the API wrapper.
 
         If you supply username and password here, they are stored, but not used.
@@ -218,10 +230,11 @@ class BruntClientAsync(BaseClient):
         :param password: the password of your Brunt account
         :parm session: aiohttp ClientSession
         """
-        super().__init__(**kwargs)
-        self._http = BruntHttpAsync(kwargs.get("session"))
+        super().__init__(username, password)
+        self._http = BruntHttpAsync(session=session)
 
     async def __aenter__(self) -> BruntClientAsync:
+        """Enter the context manager."""
         return self
 
     async def __aexit__(
@@ -230,13 +243,14 @@ class BruntClientAsync(BaseClient):
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
-        await self.close()
+        """Exit the context manager."""
+        await self.async_close()
 
-    async def close(self) -> None:
+    async def async_close(self) -> None:
         """Close the session."""
         await self._http._session.close()
 
-    async def async_login(self, username: str = None, password: str = None) -> dict:
+    async def async_login(self, username: str = None, password: str = None) -> bool:
         """Login method using username and password.
 
         :param username: the username of your Brunt account
@@ -244,37 +258,28 @@ class BruntClientAsync(BaseClient):
         :return: True if successfull
         :raises: errors from Requests call
         """
-        resp = await self._http.async_request(
+        await self._http.async_request(
             self._prepare_login(username, password), RequestTypes.POST
         )
         self._lastlogin = datetime.utcnow()
-        return resp
+        return True
 
-    async def _async_is_logged_in(self) -> dict:
-        """Check whether or not the user is logged in."""
-        # if the user has not logged in in 24 hours, relogin
-        if self._relogin:
-            return await self.async_login()
-        return {}
-
-    async def async_get_things(self) -> dict:
+    async def async_get_things(self, force: bool = False) -> list:
         """Get the things registered in your account.
 
-        :return: dict with things registered in the logged in account and API call status
+        :param force: force a refresh from the server, otherwise get from variable.
+        :return: list with things registered in the logged in account and API call status
         """
-        login_return = await self._async_is_logged_in()
-        resp = await self._http.async_request(MAIN_THINGS_PATH, RequestTypes.GET)
-        self._things = resp["things"]
-        resp.update(login_return)
-        return resp
+        if not self._things or force:
+            return await self._async_get_things()
+        return self._things
 
     async def _async_get_things(self) -> list:
-        """Check if there are things in memory, otherwise first do the getThings call and then return _things.
-
-        :return: dict with things registered (without API call status)
-        """
-        if not self._things:
-            await self.async_get_things()
+        """Check if there are things in memory, otherwise first do the getThings call and then return _things."""
+        if not self._http.is_logged_in:
+            await self.async_login()
+        resp = await self._http.async_request(MAIN_THINGS_PATH, RequestTypes.GET)
+        self._things = resp["things"]
         return self._things
 
     async def async_get_state(self, **kwargs) -> dict:
@@ -286,13 +291,12 @@ class BruntClientAsync(BaseClient):
         :raises: ValueError if the requested thing does not exists. NameError if not logged in. SyntaxError when
             not exactly one of the params is given.
         """
+        if not self._http.is_logged_in:
+            await self.async_login()
         await self._async_get_things()
-        login_return = await self._async_is_logged_in()
-        resp = await self._http.async_request(
+        return await self._http.async_request(
             self._prepare_state(**kwargs), RequestTypes.GET
         )
-        resp.update(login_return)
-        return resp
 
     async def async_change_key(self, **kwargs) -> dict:
         """Change a variable of the thing.  Mostly included for future additions.
@@ -305,13 +309,12 @@ class BruntClientAsync(BaseClient):
         :raises: ValueError if the requested thing does not exists or the position is not between 0 and 100.
             NameError if not logged in. SyntaxError when not exactly one of the params is given.
         """
+        if not self._http.is_logged_in:
+            await self.async_login()
         await self._async_get_things()
-        login_return = await self._async_is_logged_in()
-        resp = await self._http.async_request(
+        return await self._http.async_request(
             self._prepare_change_key(**kwargs), RequestTypes.PUT
         )
-        resp.update(login_return)
-        return resp
 
     async def async_change_request_position(self, request_position, **kwargs) -> dict:
         """Change the position of the thing.

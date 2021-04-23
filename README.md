@@ -41,12 +41,12 @@ print('    Success!' if res else '    Fail!')
 
 ```python
 from brunt import BruntClient
-BruntClient()
+BruntClient(username, password)
 
 or 
 
 from brunt import BruntClientAsync
-BruntClientAsync()
+BruntClientAsync(username, password, session)
 ```
 Constructor for the API wrapper.
 
