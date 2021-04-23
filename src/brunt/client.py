@@ -10,8 +10,7 @@ from typing import Any, List, Optional, Type
 from aiohttp.client import ClientSession
 from requests import Session
 
-from .const import (MAIN_HOST, MAIN_THINGS_PATH, REQUEST_POSITION_KEY,
-                    THINGS_HOST)
+from .const import MAIN_HOST, MAIN_THINGS_PATH, REQUEST_POSITION_KEY, THINGS_HOST
 from .http import BruntHttp, BruntHttpAsync
 from .utils import RequestTypes
 
@@ -72,7 +71,7 @@ class BaseClient(ABC):
         if not key:
             raise SyntaxError("Please provide a key to change")
         value = kwargs.get("value", None)
-        if not value:
+        if value is None:
             raise SyntaxError("Please provide a value to change to")
         if key.lower().find("position"):
             if int(value) < 0 or int(value) > 100:
