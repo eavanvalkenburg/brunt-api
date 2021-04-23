@@ -1,16 +1,17 @@
 """Main code for brunt http."""
 import json
 import logging
-from datetime import datetime
 from abc import ABC, abstractmethod, abstractproperty
-from typing import Any, Dict, Union
+from datetime import datetime
+from typing import Any, Dict, Optional, Union
+
 import requests
-from requests.models import Response
 from aiohttp import ClientResponse, ClientSession
 from multidict import CIMultiDict
+from requests.models import Response
 
+from .const import COOKIE_DOMAIN, DT_FORMAT_STRING
 from .utils import RequestTypes
-from .const import DT_FORMAT_STRING, COOKIE_DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,12 +49,15 @@ class BaseBruntHTTP(ABC):
     def _parse_response(
         self,
         response: Union[ClientResponse, Response],
-        response_json: Union[dict, list],
+        response_json: Optional[Union[dict, list]],
     ) -> dict:
         """Parse the json of the response."""
         ret: Dict[str, Any] = {"result": "success"}
         _LOGGER.debug("Response json: %s", response_json)
         # if it is a list of things, then set the tag to things
+        if not response_json:
+            return ret
+
         if isinstance(response_json, list):
             ret["things"] = response_json
             return ret

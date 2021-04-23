@@ -1,15 +1,17 @@
 """Main code for brunt api package."""
 from __future__ import annotations
 
+import logging
 from abc import ABC
 from datetime import datetime
-import logging
 from types import TracebackType
-from typing import List, Optional, Type, Any
+from typing import Any, List, Optional, Type
+
 from aiohttp.client import ClientSession
 from requests import Session
 
-from .const import MAIN_HOST, MAIN_THINGS_PATH, REQUEST_POSITION_KEY, THINGS_HOST
+from .const import (MAIN_HOST, MAIN_THINGS_PATH, REQUEST_POSITION_KEY,
+                    THINGS_HOST)
 from .http import BruntHttp, BruntHttpAsync
 from .utils import RequestTypes
 
