@@ -11,3 +11,4 @@ finally:
     del get_distribution, DistributionNotFound
 
 from .client import BruntClient, BruntClientAsync
+from .thing import Thing

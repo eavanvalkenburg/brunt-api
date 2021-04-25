@@ -80,46 +80,46 @@ await BruntClient.async_get_things(self)
 ```
 Get the things registered in your account
 
-:return: dict with things registered in the logged in account and API call status
+:return: List of Things
 :raises: errors from Requests call
 
 <h2 id="brunt.brunt.BruntClient.getState">get_state</h2>
 
 ```python
-BruntClient.get_state(self, **kwargs)
-await BruntClient.async_get_state(self, **kwargs)
+BruntClient.get_state(self, thing="Blind")
+await BruntClient.async_get_state(self, thing="Blind")
 ```
-Get the state of a thing
+Get the state of a thing, by NAME or thingUri
 
-:param thing: a string with the name of the thing, which is then checked using getThings.
+:param thing: a string with the NAME of the thing, which is then checked against the names of all the things.
 :param thingUri: Uri (string) of the thing you are getting the state from, not checked against getThings.
 
-:return: a dict with the state of the Thing.
+:return: a Thing.
 :raises: ValueError if the requested thing does not exists. NameError if not logged in. SyntaxError when
     not exactly one of the params is given.
 
 <h2 id="brunt.brunt.BruntClient.changeRequestPosition">change_request_position</h2>
 
 ```python
-BruntClient.change_request_position(self, request_position, **kwargs)
-await BruntClient.async_change_request_position(self, request_position, **kwargs)
+BruntClient.change_request_position(self, request_position, thing="Blind")
+await BruntClient.async_change_request_position(self, request_position, thing="Blind")
 ```
 Changes the position of the thing. Internally calls the changeKey method with key set to
 requestPosition and value set to request_position
 
 :param request_position: The new position for the slide (0-100)
-:param thing: a string with the name of the thing, which is then checked using getThings.
+:param thing: a string with the name of the thing, which is then checked against the names of all the things.
 :param thingUri: Uri (string) of the thing you are getting the state from, not checked against getThings.
 
-:return: a dict with the state of the Thing.
+:return: a dict with 'result'.
 :raises: ValueError if the requested thing does not exists or the position is not between 0 and 100.
     NameError if not logged in. SyntaxError when not exactly one of the params is given.
 
 <h2 id="brunt.brunt.BruntClient.changeKey">change_key</h2>
 
 ```python
-BruntClient.change_key(self, **kwargs)
-await BruntClient.async_change_key(self, **kwargs)
+BruntClient.change_key(self, key="requestPosition", value="100", thing="Blind")
+await BruntClient.async_change_key(self, key="requestPosition", value="100", thing="Blind")
 ```
 Change a variable of the thing by supplying the key and value. Mostly included for future additions.
 
@@ -127,6 +127,6 @@ Change a variable of the thing by supplying the key and value. Mostly included f
 :param value: The new value
 :param thing: a string with the name of the thing, which is then checked using getThings.
 :param thingUri: Uri (string) of the thing you are getting the state from, not checked against getThings.
-:return: a dict with the state of the Thing.
+:return: a dict with 'result'.
 :raises: ValueError if the requested thing does not exists or the position is not between 0 and 100. 
     NameError if not logged in. SyntaxError when not exactly one of the params is given. 

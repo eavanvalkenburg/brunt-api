@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 import time
 
-from brunt import BruntClientAsync
+from brunt import BruntClientAsync, Thing
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -21,21 +21,18 @@ async def main():
     try:
         await bapi.async_login()
         things = await bapi.async_get_things()
-        print(things)
-        print("")
-        move = False
-        state = await bapi.async_get_state(thingUri=creds["device"])
-        state = state["thing"]
-        # things = state['thing']
-        print(state)
+        print(f"things: {things}")
+        state = await bapi.async_get_state(thing="Blind")
+        print(f"state: {state}")
         print(
-            f"    Current status of { state['NAME'] } is position { state['currentPosition'] }"
+            f"    Current status of { state.NAME } is position { state.currentPosition }"
         )
+        move = False
         if move:
-            newPos = 90
-            if int(state["currentPosition"]) == 89:
+            newPos = 99
+            if int(state.requestPosition) == 99:
                 newPos = 100
-            print(f"    Setting { state['NAME'] } to position { newPos }")
+            print(f"    Setting { state.NAME } to position { newPos }")
             res = await bapi.async_change_request_position(
                 newPos, thingUri=creds["device"]
             )

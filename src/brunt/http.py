@@ -33,7 +33,6 @@ class BaseBruntHTTP(ABC):
 
     def _prepare_request(self, data: dict) -> dict:
         """Prepare the payload and add the length to the header, payload might be empty."""
-        # headers = DEFAULT_HEADER.copy()
         payload = ""
         headers = ""
         if "data" in data:
@@ -52,22 +51,25 @@ class BaseBruntHTTP(ABC):
         response_json: Optional[Union[dict, list]],
     ) -> dict:
         """Parse the json of the response."""
-        ret: Dict[str, Any] = {"result": "success"}
-        _LOGGER.debug("Response json: %s", response_json)
-        # if it is a list of things, then set the tag to things
-        if not response_json:
-            return ret
+        if response_json is not None:
+            return response_json
+        return {"result": "success"}
+        # ret: Dict[str, Any] = {"result": "success"}
+        # _LOGGER.debug("Response json: %s", response_json)
+        # # if it is a list of things, then set the tag to things
+        # if not response_json:
+        #     return ret
 
-        if isinstance(response_json, list):
-            ret["things"] = response_json
-            return ret
+        # if isinstance(response_json, list):
+        #     ret["things"] = response_json
+        #     return ret
 
-        if "ID" in response_json:
-            ret["login"] = response_json
-            return ret
+        # if "ID" in response_json:
+        #     ret["login"] = response_json
+        #     return ret
 
-        ret["thing"] = response_json
-        return ret
+        # ret["thing"] = response_json
+        # return ret
 
     @abstractmethod
     def request(self, data: dict, request_type: RequestTypes) -> dict:

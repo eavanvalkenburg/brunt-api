@@ -19,18 +19,14 @@ async def main():
         bapi.login()
         things = bapi.get_things()
         print(things)
-        # print("")
-        move = False
         state = bapi.get_state(thingUri=creds["device"])
-        state = state["thing"]
-        # things = state['thing']
-        # print(state)
         print(
-            f"    Current status of { state['NAME'] } is position { state['currentPosition'] }"
+            f"    Current status of { state.NAME } is position { state.currentPosition }"
         )
+        move = False
         if move:
             newPos = 90
-            if int(state["currentPosition"]) == 89:
+            if int(state.currentPosition) == 89:
                 newPos = 100
             print(f"    Setting { state['NAME'] } to position { newPos }")
             res = bapi.change_request_position(newPos, thingUri=creds["device"])
