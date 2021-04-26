@@ -5,7 +5,7 @@ import logging
 from abc import ABC
 from datetime import datetime
 from types import TracebackType
-from typing import Any, List, Optional, Type
+from typing import Any, List, Optional, Type, Union
 
 from aiohttp.client import ClientSession
 from requests import Session
@@ -31,10 +31,11 @@ class BaseClient(ABC):
         :param username: the username of your Brunt account
         :param password: the password of your Brunt account
         """
-        self._user: str = username
-        self._pass: str = password
+        self._user = username
+        self._pass = password
         self._things: List[Thing] = []
         self._lastlogin: Optional[datetime] = None
+        self._last_requested_position: dict[str, int] = {}
 
     def _prepare_login(self, username: str = None, password: str = None) -> dict:
         """Prepare the login info."""
@@ -57,7 +58,7 @@ class BaseClient(ABC):
             raise SyntaxError(
                 "Please provide either the 'thing' name or the 'thingUri', the thingUri is used first when given."
             )
-        if thingUri is None:
+        if thingUri is None and thing is not None:
             thingUri = self._get_thingUri_from_thing(thing)
         return {"path": f"/thing{thingUri}", "host": THINGS_HOST}
 
@@ -69,11 +70,13 @@ class BaseClient(ABC):
             raise SyntaxError(
                 "Please provide either the 'thing' name or the 'thingUri', the thingUri is used first when given."
             )
-        if thingUri is None:
+        if thingUri is None and thing is not None:
             thingUri = self._get_thingUri_from_thing(thing)
         if key == REQUEST_POSITION_KEY:
             if int(value) < 0 or int(value) > 100:
                 raise ValueError("Please set the position between 0 and 100.")
+            if thingUri:
+                self._last_requested_position[thingUri] = int(value)
         return {
             "data": {key: str(value)},
             "path": f"/thing{thingUri}",
@@ -175,11 +178,11 @@ class BruntClient(BaseClient):
         resp = self._http.request(
             self._prepare_state(thing=thing, thingUri=thingUri), RequestTypes.GET
         )
-        return Thing(**resp)
+        return Thing(**resp)  # type: ignore
 
     def change_key(
         self, key: str, value: Any, thing: str = None, thingUri: str = None
-    ) -> dict:
+    ) -> Union[dict, list]:
         """Change a variable of the thing.  Mostly included for future additions.
 
         :param key: The value you want to change
@@ -202,7 +205,7 @@ class BruntClient(BaseClient):
 
     def change_request_position(
         self, request_position, thing: str = None, thingUri: str = None
-    ) -> dict:
+    ) -> Union[dict, list]:
         """Change the position of the thing.
 
         :param request_position: The new position for the slide (0-100)
@@ -291,7 +294,7 @@ class BruntClientAsync(BaseClient):
             self._things = [Thing(**r) for r in resp]
         return self._things
 
-    async def async_get_state(self, thing: str = None, thingUri: str = None) -> dict:
+    async def async_get_state(self, thing: str = None, thingUri: str = None) -> Thing:
         """Get the state of a thing.
 
         :param thing: a string with the name of the thing, which is then checked using getThings.
@@ -306,11 +309,11 @@ class BruntClientAsync(BaseClient):
         resp = await self._http.async_request(
             self._prepare_state(thing=thing, thingUri=thingUri), RequestTypes.GET
         )
-        return Thing(**resp)
+        return Thing(**resp)  # type: ignore
 
     async def async_change_key(
         self, key: str, value: Any, thing: str = None, thingUri: str = None
-    ) -> dict:
+    ) -> Union[dict, list]:
         """Change a variable of the thing.  Mostly included for future additions.
 
         :param key: The value you want to change
@@ -333,7 +336,7 @@ class BruntClientAsync(BaseClient):
 
     async def async_change_request_position(
         self, request_position: int, thing: str = None, thingUri: str = None
-    ) -> dict:
+    ) -> Union[dict, list]:
         """Change the position of the thing.
 
         :param request_position: The new position for the slide (0-100)
