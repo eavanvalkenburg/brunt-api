@@ -204,7 +204,7 @@ class BruntClient(BaseClient):
         )
 
     def change_request_position(
-        self, request_position, thing: str = None, thingUri: str = None
+        self, request_position: int, thing: str = None, thingUri: str = None
     ) -> Union[dict, list]:
         """Change the position of the thing.
 

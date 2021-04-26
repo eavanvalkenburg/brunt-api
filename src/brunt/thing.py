@@ -29,10 +29,10 @@ class Thing:
     PERMISSION_TYPE: Optional[str] = None
     datetime: Optional[datetime] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Do post init work."""
         self.datetime = datetime.utcfromtimestamp(int(self.TIMESTAMP) / 1000)
 
-    def compare_string(self, string: str):
+    def compare_string(self, string: str) -> bool:
         """Compare to string."""
         return self.NAME == string

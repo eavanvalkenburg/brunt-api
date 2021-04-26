@@ -14,3 +14,6 @@ except PackageNotFoundError:  # pragma: no cover
     __version__ = "unknown"
 finally:
     del version, PackageNotFoundError
+
+from .client import BruntClient, BruntClientAsync
+from .thing import Thing
