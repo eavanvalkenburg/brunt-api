@@ -33,9 +33,9 @@ class BaseClient(ABC):
         """
         self._user = username
         self._pass = password
-        self._things: List[Thing] = []
+        self._things: Optional[List[Thing]] = None
         self._lastlogin: Optional[datetime] = None
-        self._last_requested_position: dict[str, int] = {}
+        self._last_requested_position: Optional[dict[str, int]] = None
 
     def _prepare_login(self, username: str = None, password: str = None) -> dict:
         """Prepare the login info."""
@@ -76,7 +76,10 @@ class BaseClient(ABC):
             if int(value) < 0 or int(value) > 100:
                 raise ValueError("Please set the position between 0 and 100.")
             if thingUri:
-                self._last_requested_position[thingUri] = int(value)
+                if self._last_requested_position is not None:
+                    self._last_requested_position[thingUri] = int(value)
+                else:
+                    self._last_requested_position = {thingUri: int(value)}
         return {
             "data": {key: str(value)},
             "path": f"/thing{thingUri}",
@@ -91,6 +94,16 @@ class BaseClient(ABC):
         if thingUri is None:
             raise ValueError("Unknown thing: " + thing)
         return thingUri
+
+    @property
+    def last_requested_positions(self) -> dict[str, int]:
+        """Return the last requested positions."""
+        if self._things is None:
+            raise ValueError("Refresh things first")
+        ret = {t.thingUri: int(t.requestPosition) for t in self._things}
+        if self._last_requested_position is not None:
+            ret.update(self._last_requested_position)
+        return ret
 
 
 class BruntClient(BaseClient):
