@@ -18,6 +18,6 @@ jobs:
         with:
           python-version: 3.9
       - name: Run installs.
-        run: pip install -e .
+        run: pip install -e .[test]
       - name: Run Mypy
         run: mypy
