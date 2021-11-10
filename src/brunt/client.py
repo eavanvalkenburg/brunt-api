@@ -318,7 +318,7 @@ class BruntClientAsync(BaseClient):
         """
         if not self._http.is_logged_in:
             await self.async_login()
-        await self._async_get_things()
+        await self.async_get_things()
         resp = await self._http.async_request(
             self._prepare_state(thing=thing, thingUri=thingUri), RequestTypes.GET
         )
@@ -339,7 +339,7 @@ class BruntClientAsync(BaseClient):
         """
         if not self._http.is_logged_in:
             await self.async_login()
-        await self._async_get_things()
+        await self.async_get_things()
         return await self._http.async_request(
             self._prepare_change_key(
                 key=key, value=value, thing=thing, thingUri=thingUri
