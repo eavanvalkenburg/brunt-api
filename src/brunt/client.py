@@ -31,11 +31,11 @@ class BaseClient(ABC):
         :param username: the username of your Brunt account
         :param password: the password of your Brunt account
         """
-        self._user = username
-        self._pass = password
-        self._things: Optional[List[Thing]] = None
-        self._lastlogin: Optional[datetime] = None
-        self._last_requested_position: Optional[dict[str, int]] = None
+        self._user: str = username
+        self._pass: str = password
+        self._things: List[Thing] | None = None
+        self._lastlogin: datetime | None = None
+        self._last_requested_position: dict[str, int] | None = None
 
     def _prepare_login(self, username: str = None, password: str = None) -> dict:
         """Prepare the login info."""
@@ -88,6 +88,8 @@ class BaseClient(ABC):
 
     def _get_thingUri_from_thing(self, thing: str) -> str:
         """Get the thingUri for a thing."""
+        if self._things is None:
+            raise ValueError("Refresh things first")
         thingUri = next(
             (t.thingUri for t in self._things if t.compare_string(thing)), None
         )
@@ -100,7 +102,11 @@ class BaseClient(ABC):
         """Return the last requested positions."""
         if self._things is None:
             raise ValueError("Refresh things first")
-        ret = {t.thingUri: int(t.requestPosition) for t in self._things}
+        ret = {
+            t.thingUri: int(t.requestPosition)
+            for t in self._things
+            if t.thingUri is not None
+        }
         if self._last_requested_position is not None:
             ret.update(self._last_requested_position)
         return ret
@@ -156,18 +162,18 @@ class BruntClient(BaseClient):
         return True
 
     def get_things(self, force: bool = False) -> List[Thing]:
-        """Get the things registered in your account.
+        """Check if there are things in memory, otherwise first do the getThings call and then return _things.
 
-        :return: dict with things registered in the logged in account and API call status
+        :return: dict with things registered (without API call status)
         """
         if not self._things or force:
             return self._get_things()
         return self._things
 
     def _get_things(self) -> List[Thing]:
-        """Check if there are things in memory, otherwise first do the getThings call and then return _things.
+        """Get the things registered in your account.
 
-        :return: dict with things registered (without API call status)
+        :return: dict with things registered in the logged in account and API call status
         """
         if not self._http.is_logged_in:
             self.login()
