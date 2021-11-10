@@ -31,8 +31,8 @@ class BaseClient(ABC):
         :param username: the username of your Brunt account
         :param password: the password of your Brunt account
         """
-        self._user: str = username
-        self._pass: str = password
+        self._user: str | None = username
+        self._pass: str | None = password
         self._things: List[Thing] | None = None
         self._lastlogin: datetime | None = None
         self._last_requested_position: dict[str, int] | None = None
@@ -180,7 +180,8 @@ class BruntClient(BaseClient):
         resp = self._http.request(MAIN_THINGS_PATH, RequestTypes.GET)
         if isinstance(resp, list):
             self._things = [Thing(**r) for r in resp]
-        return self._things
+            return self._things
+        return []
 
     def get_state(self, thing: str = None, thingUri: str = None) -> Thing:
         """Get the state of a thing.
@@ -311,7 +312,8 @@ class BruntClientAsync(BaseClient):
         resp = await self._http.async_request(MAIN_THINGS_PATH, RequestTypes.GET)
         if isinstance(resp, list):
             self._things = [Thing(**r) for r in resp]
-        return self._things
+            return self._things
+        return []
 
     async def async_get_state(self, thing: str = None, thingUri: str = None) -> Thing:
         """Get the state of a thing.
