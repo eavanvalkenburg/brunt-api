@@ -1,3 +1,5 @@
+[![PyPI version](https://badge.fury.io/py/brunt.svg)](https://badge.fury.io/py/brunt)
+
 # Brunt
 Unofficial python SDK for Brunt, based on the NPM version here https://github.com/MattJeanes/brunt-api
 
