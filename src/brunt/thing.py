@@ -1,4 +1,6 @@
 """Class for thing objects."""
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
@@ -25,9 +27,10 @@ class Thing:
     Duration: str
     ICON: str
     delay: str
-    thingUri: Optional[str] = None
-    PERMISSION_TYPE: Optional[str] = None
-    datetime: Optional[datetime] = None
+    thingUri: str | None = None
+    PERMISSION_TYPE: str | None = None
+    datetime: datetime | None = None
+    resave: str | None = None
 
     def __post_init__(self) -> None:
         """Do post init work."""
