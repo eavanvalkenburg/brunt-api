@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field, fields
 from datetime import datetime
-from typing import Optional
+from typing import Any
 
 # state: {'TIMESTAMP': '1619179952875', 'NAME': 'Blind', 'SERIAL': '00140d6f1950f166', 'MODEL': 'BEAKR1601', 'requestPosition': '100', 'currentPosition': '100', 'moveState': '0', 'setLoad': '2418', 'currentLoad': '5', 'FW_VERSION': '1.361', 'overStatus': '0', 'Duration': '1000', 'ICON': 'b-icon-curtain_01', 'delay': 3810}
 # things: [{'TIMESTAMP': '1619179952875', 'NAME': 'Blind', 'SERIAL': '00140d6f1950f166', 'MODEL': 'BEAKR1601', 'requestPosition': '100', 'currentPosition': '100', 'moveState': '0', 'setLoad': '2418', 'currentLoad': '5', 'FW_VERSION': '1.361', 'overStatus': '0', 'Duration': '1000', 'ICON': 'b-icon-curtain_01', 'thingUri': '/hub/00140d6f1950f166', 'PERMISSION_TYPE': '"ownership"', 'delay': 2594}]
@@ -36,13 +36,13 @@ class Thing:
     resave: str | None = None
 
     @classmethod
-    def create_from_dict(cls, dict_) -> Thing:
+    def create_from_dict(cls, input_dict: dict[str, Any]) -> Thing:
         """Create a Thing from a dict."""
         class_fields = {f.name for f in fields(cls)}
-        for key in dict_:
+        for key in input_dict:
             if key not in class_fields:
                 _LOGGER.info("%s not in Thing class fields", key)
-        return Thing(**{k: v for k, v in dict_.items() if k in class_fields})
+        return Thing(**{k: v for k, v in input_dict.items() if k in class_fields})
 
     def __post_init__(self) -> None:
         """Do post init work."""
