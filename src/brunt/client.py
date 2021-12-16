@@ -179,7 +179,7 @@ class BruntClient(BaseClient):
             self.login()
         resp = self._http.request(MAIN_THINGS_PATH, RequestTypes.GET)
         if isinstance(resp, list):
-            self._things = [Thing(**r) for r in resp]
+            self._things = [Thing.create_from_dict(r) for r in resp]
             return self._things
         return []
 
@@ -198,7 +198,7 @@ class BruntClient(BaseClient):
         resp = self._http.request(
             self._prepare_state(thing=thing, thingUri=thingUri), RequestTypes.GET
         )
-        return Thing(**resp)  # type: ignore
+        return Thing.create_from_dict(resp)  # type: ignore
 
     def change_key(
         self, key: str, value: Any, thing: str = None, thingUri: str = None
@@ -311,7 +311,7 @@ class BruntClientAsync(BaseClient):
             await self.async_login()
         resp = await self._http.async_request(MAIN_THINGS_PATH, RequestTypes.GET)
         if isinstance(resp, list):
-            self._things = [Thing(**r) for r in resp]
+            self._things = [Thing.create_from_dict(r) for r in resp]
             return self._things
         return []
 
@@ -330,7 +330,7 @@ class BruntClientAsync(BaseClient):
         resp = await self._http.async_request(
             self._prepare_state(thing=thing, thingUri=thingUri), RequestTypes.GET
         )
-        return Thing(**resp)  # type: ignore
+        return Thing.create_from_dict(resp)  # type: ignore
 
     async def async_change_key(
         self, key: str, value: Any, thing: str = None, thingUri: str = None
