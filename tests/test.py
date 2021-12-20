@@ -32,27 +32,21 @@ async def main():
     # except ValueError:
     #     print("No positions yet.")
     state = await bapi.async_get_state(thing="Blind")
-    # print(f"state: {state}")
-    # print(f"    Current status of { state.NAME } is position { state.currentPosition }")
+    print(f"state: {state}")
+    print(
+        f"    Current status of { state.name } is position { state.current_position }"
+    )
     move = True
     if move:
         newPos = 99
-        if int(state.requestPosition) == 99:
+        if state.request_position == 99:
             newPos = 100
-        print(f"    Setting { state.NAME } to position { newPos }")
-        try:
-            await bapi.async_change_request_position(
-                newPos, thingUri="/hub/00140d6f1950f167"
-            )
-        except ClientResponseError as err:
-            _LOGGER.debug(err)
-            _LOGGER.debug(err.status)
-        # print(res)
-        # print("    Success!" if res else "    Fail!")
-        # try:
-        #     print(bapi.last_requested_positions)
-        # except ValueError:
-        #     print("No positions yet.")
+        print(f"    Setting { state.name } to position { newPos }")
+        await bapi.async_change_request_position(thing="Blind", request_position=newPos)
+    # try:
+    #     print(bapi.last_requested_positions)
+    # except ValueError:
+    #     print("No positions yet.")
     # except Exception as e:
     #     print(f"Error: {e}")
     # finally:

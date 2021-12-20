@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, fields
 from datetime import datetime
 from typing import Any
 
@@ -11,43 +11,84 @@ from typing import Any
 
 _LOGGER = logging.getLogger(__name__)
 
+MAPPING = {
+    "NAME": "name",
+    "thingUri": "thing_uri",
+    "MODEL": "model",
+    "FW_VERSION": "fw_version",
+    "requestPosition": "request_position",
+    "TIMESTAMP": "timestamp",
+    "SERIAL": "serial",
+    "currentPosition": "current_position",
+    "moveState": "move_state",
+    "setLoad": "set_load",
+    "currentLoad": "current_load",
+    "overStatus": "over_status",
+    "Duration": "duration",
+    "ICON": "icon",
+    "delay": "delay",
+    "PERMISSION_TYPE": "permission_type",
+    "resave": "resave",
+    "resaveflag": "resave_flag",
+    "buttonControl": "button_control",
+}
+
 
 @dataclass
 class Thing:
     """Class for representing Things."""
 
-    TIMESTAMP: int
-    NAME: str
-    SERIAL: str
-    MODEL: str
-    requestPosition: str
-    currentPosition: str
-    moveState: str
-    setLoad: str
-    currentLoad: str
-    FW_VERSION: str
-    overStatus: str
-    Duration: str
-    ICON: str
-    delay: str
-    thingUri: str | None = None
-    PERMISSION_TYPE: str | None = None
+    name: str
+    model: str
+    fw_version: str
+    thing_uri: str | None = None
+    request_position: int = 0
+    current_position: int = 0
+    move_state: int = 0
+    timestamp: int | None = None
+    serial: str | None = None
+    set_load: int | None = None
+    current_load: int | None = None
+    over_status: int | None = None
+    duration: int | None = None
+    icon: str | None = None
+    delay: int | None = None
+    permission_type: str | None = None
     datetime: datetime | None = None
     resave: str | None = None
+    resave_flag: str | None = None
+    button_control: str | None = None
 
     @classmethod
     def create_from_dict(cls, input_dict: dict[str, Any]) -> Thing:
         """Create a Thing from a dict."""
-        class_fields = {f.name for f in fields(cls)}
-        for key in input_dict:
-            if key not in class_fields:
+        _LOGGER.debug("Creating Thing from dict: %s", input_dict)
+        class_fields = {f.name: f.type for f in fields(cls)}
+        thing = {}
+        for key, value in input_dict.items():
+            new_key = MAPPING.get(key)
+            if new_key is None:
+                _LOGGER.info("%s not in Thing mapping fields", key)
+                continue
+            if new_key not in class_fields:
                 _LOGGER.info("%s not in Thing class fields", key)
-        return Thing(**{k: v for k, v in input_dict.items() if k in class_fields})
+                continue
+            if class_fields[new_key] in ("int", "int | None"):
+                try:
+                    value = int(value)
+                except ValueError:
+                    _LOGGER.warning("%s not an int, value was: %s", key, value)
+                    continue
+            thing[new_key] = value
+        return Thing(**thing)
 
     def __post_init__(self) -> None:
         """Do post init work."""
-        self.datetime = datetime.utcfromtimestamp(int(self.TIMESTAMP) / 1000)
+        if self.timestamp is not None:
+            self.datetime = datetime.utcfromtimestamp(self.timestamp / 1000)
+        if self.thing_uri is None and self.serial is not None:
+            self.thing_uri = f"/hub/{self.serial}"
 
-    def compare_string(self, string: str) -> bool:
-        """Compare to string."""
-        return self.NAME == string
+    def compare_name(self, name: str) -> bool:
+        """Compare name to name."""
+        return self.name == name
