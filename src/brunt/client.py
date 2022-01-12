@@ -15,7 +15,6 @@ from .thing import Thing
 from .utils import RequestTypes
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
 
 
 class BaseClient:

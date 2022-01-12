@@ -9,5 +9,8 @@ except PackageNotFoundError:  # pragma: no cover
 finally:
     del version, PackageNotFoundError
 
-from .client import BruntClient, BruntClientAsync
-from .thing import Thing
+from .client import (  # pylint: disable=wrong-import-position
+    BruntClient,
+    BruntClientAsync,
+)
+from .thing import Thing  # pylint: disable=wrong-import-position
