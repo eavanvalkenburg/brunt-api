@@ -6,9 +6,6 @@ from dataclasses import dataclass, fields
 from datetime import datetime
 from typing import Any
 
-# state: {'TIMESTAMP': '1619179952875', 'NAME': 'Blind', 'SERIAL': '00140d6f1950f166', 'MODEL': 'BEAKR1601', 'requestPosition': '100', 'currentPosition': '100', 'moveState': '0', 'setLoad': '2418', 'currentLoad': '5', 'FW_VERSION': '1.361', 'overStatus': '0', 'Duration': '1000', 'ICON': 'b-icon-curtain_01', 'delay': 3810}
-# things: [{'TIMESTAMP': '1619179952875', 'NAME': 'Blind', 'SERIAL': '00140d6f1950f166', 'MODEL': 'BEAKR1601', 'requestPosition': '100', 'currentPosition': '100', 'moveState': '0', 'setLoad': '2418', 'currentLoad': '5', 'FW_VERSION': '1.361', 'overStatus': '0', 'Duration': '1000', 'ICON': 'b-icon-curtain_01', 'thingUri': '/hub/00140d6f1950f166', 'PERMISSION_TYPE': '"ownership"', 'delay': 2594}]
-
 _LOGGER = logging.getLogger(__name__)
 
 MAPPING = {

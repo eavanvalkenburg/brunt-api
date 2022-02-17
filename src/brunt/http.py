@@ -1,30 +1,28 @@
 """Main code for brunt http."""
+from __future__ import annotations
+
 import json
 import logging
 from abc import abstractmethod, abstractproperty
 from datetime import datetime
-from typing import Union
+from typing import Final
 
 import requests
 from aiohttp import ClientSession
-from multidict import CIMultiDict
-from requests.utils import CaseInsensitiveDict
 
 from .const import COOKIE_DOMAIN, DT_FORMAT_STRING
 from .utils import RequestTypes
 
 _LOGGER = logging.getLogger(__name__)
 
-DEFAULT_HEADER = CaseInsensitiveDict(
-    {
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "Origin": "https://sky.brunt.co",
-        "Accept-Language": "en-gb",
-        "Accept": "application/vnd.brunt.v1+json",
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 11_3 like Mac OS X) \
+DEFAULT_HEADER: Final = {
+    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "Origin": "https://sky.brunt.co",
+    "Accept-Language": "en-gb",
+    "Accept": "application/vnd.brunt.v1+json",
+    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 11_3 like Mac OS X) \
 AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E216",
-    }
-)
+}
 
 
 class BaseBruntHTTP:
@@ -34,7 +32,7 @@ class BaseBruntHTTP:
     def _prepare_request(data: dict) -> dict:
         """Prepare the payload and add the length to the header, payload might be empty."""
         payload = ""
-        headers = {}
+        headers = DEFAULT_HEADER.copy()
         if "data" in data:
             payload = json.dumps(data["data"])
             headers = {"Content-Length": str(len(payload))}
@@ -42,13 +40,13 @@ class BaseBruntHTTP:
         return {"url": data["host"] + data["path"], "data": payload, "headers": headers}
 
     @abstractmethod
-    def request(self, data: dict, request_type: RequestTypes) -> Union[dict, list]:
+    def request(self, data: dict, request_type: RequestTypes) -> dict | list:
         """Return the request response - abstract."""
 
     @abstractmethod
     async def async_request(
         self, data: dict, request_type: RequestTypes
-    ) -> Union[dict, list]:
+    ) -> dict | list:
         """Return the request response - abstract."""
 
     @abstractproperty
@@ -62,7 +60,6 @@ class BruntHttp(BaseBruntHTTP):
     def __init__(self, session: requests.Session = None):
         """Initialize the BruntHTTP object."""
         self.session = session if session else requests.Session()
-        self.session.headers = DEFAULT_HEADER
 
     @property
     def is_logged_in(self) -> bool:
@@ -81,11 +78,11 @@ class BruntHttp(BaseBruntHTTP):
 
     async def async_request(
         self, data: dict, request_type: RequestTypes
-    ) -> Union[dict, list]:
+    ) -> dict | list:
         """Raise error for using this call with sync."""
         raise NotImplementedError("You are using the sync version, please use request.")
 
-    def request(self, data: dict, request_type: RequestTypes) -> Union[dict, list]:
+    def request(self, data: dict, request_type: RequestTypes) -> dict | list:
         """Request the data.
 
         :param session: session object from the Requests package
@@ -96,7 +93,8 @@ class BruntHttp(BaseBruntHTTP):
         :raises: raises errors from Requests through the raise_for_status function
         """
         resp = self.session.request(
-            request_type.value, **BaseBruntHTTP._prepare_request(data)
+            request_type.value,
+            **BaseBruntHTTP._prepare_request(data),
         )
         # raise an error if it occured in the Request.
         resp.raise_for_status()
@@ -112,7 +110,6 @@ class BruntHttpAsync(BaseBruntHTTP):
     def __init__(self, session: ClientSession = None):
         """Initialize the BruntHTTP object."""
         self.session = session if session else ClientSession()
-        self.session._default_headers = CIMultiDict(DEFAULT_HEADER)
 
     @property
     def is_logged_in(self) -> bool:
@@ -128,7 +125,7 @@ class BruntHttpAsync(BaseBruntHTTP):
                     )
         return False
 
-    def request(self, data: dict, request_type: RequestTypes) -> Union[dict, list]:
+    def request(self, data: dict, request_type: RequestTypes) -> dict | list:
         """Raise error for using this call with async."""
         raise NotImplementedError(
             "You are using the Async version, please use async_request."
@@ -136,7 +133,7 @@ class BruntHttpAsync(BaseBruntHTTP):
 
     async def async_request(
         self, data: dict, request_type: RequestTypes
-    ) -> Union[dict, list]:
+    ) -> dict | list:
         """Request the data.
 
         :param session: session object from the Requests package
@@ -149,7 +146,7 @@ class BruntHttpAsync(BaseBruntHTTP):
         async with self.session.request(
             request_type.value,
             **BaseBruntHTTP._prepare_request(data),
-            raise_for_status=True
+            raise_for_status=True,
         ) as resp:
             try:
                 return await resp.json(content_type=None)

@@ -1,3 +1,5 @@
+"""Constants for Brunt."""
+
 MAIN_HOST = "https://sky.brunt.co"
 MAIN_THINGS_PATH = {"path": "/thing", "host": MAIN_HOST}
 THINGS_HOST = "https://thing.brunt.co:8080"

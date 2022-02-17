@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from types import TracebackType
-from typing import Any, List, Optional, Type, Union
+from typing import Any, Type
 
 from aiohttp.client import ClientSession
 from requests import Session
@@ -32,7 +32,7 @@ class BaseClient:
         """
         self._user: str | None = username
         self._pass: str | None = password
-        self._things: List[Thing] | None = None
+        self._things: list[Thing] | None = None
         self._last_login: datetime | None = None
         self._last_requested_position: dict[str, int] | None = None
 
@@ -140,9 +140,9 @@ class BruntClient(BaseClient):
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: Type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         """Exit the context manager."""
         self.close()
@@ -163,7 +163,7 @@ class BruntClient(BaseClient):
         self._last_login = datetime.utcnow()
         return True
 
-    def get_things(self, force: bool = False) -> List[Thing]:
+    def get_things(self, force: bool = False) -> list[Thing]:
         """Get all the things.
 
         Check if there are things in memory. otherwise first do the getThings call
@@ -175,7 +175,7 @@ class BruntClient(BaseClient):
             return self._get_things()
         return self._things
 
-    def _get_things(self) -> List[Thing]:
+    def _get_things(self) -> list[Thing]:
         """Get the things registered in your account.
 
         :return: dict with things registered in the logged in account
@@ -211,7 +211,7 @@ class BruntClient(BaseClient):
 
     def change_key(
         self, key: str, value: Any, thing: str = None, thing_uri: str = None
-    ) -> Union[dict, list]:
+    ) -> dict | list:
         """Change a variable of the thing.  Mostly included for future additions.
 
         :param key: The value you want to change
@@ -238,7 +238,7 @@ class BruntClient(BaseClient):
 
     def change_request_position(
         self, request_position: int, thing: str = None, thing_uri: str = None
-    ) -> Union[dict, list]:
+    ) -> dict | list:
         """Change the position of the thing.
 
         :param request_position: The new position for the slide (0-100)
@@ -288,9 +288,9 @@ class BruntClientAsync(BaseClient):
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: Type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         """Exit the context manager."""
         await self.async_close()
@@ -313,7 +313,7 @@ class BruntClientAsync(BaseClient):
         self._last_login = datetime.utcnow()
         return True
 
-    async def async_get_things(self, force: bool = False) -> List[Thing]:
+    async def async_get_things(self, force: bool = False) -> list[Thing]:
         """Get the things registered in your account.
 
         :param force: force a refresh from the server, otherwise get from variable.
@@ -323,7 +323,7 @@ class BruntClientAsync(BaseClient):
             return await self._async_get_things()
         return self._things
 
-    async def _async_get_things(self) -> List[Thing]:
+    async def _async_get_things(self) -> list[Thing]:
         """Get the things.
 
         Check if there are things in memory, otherwise first do the getThings call and
@@ -359,7 +359,7 @@ class BruntClientAsync(BaseClient):
 
     async def async_change_key(
         self, key: str, value: Any, thing: str = None, thing_uri: str = None
-    ) -> Union[dict, list]:
+    ) -> dict | list:
         """Change a variable of the thing.  Mostly included for future additions.
 
         :param key: The value you want to change
@@ -386,7 +386,7 @@ class BruntClientAsync(BaseClient):
 
     async def async_change_request_position(
         self, request_position: int, thing: str = None, thing_uri: str = None
-    ) -> Union[dict, list]:
+    ) -> dict | list:
         """Change the position of the thing.
 
         :param request_position: The new position for the slide (0-100)
